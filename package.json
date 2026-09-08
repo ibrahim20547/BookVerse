@@ -1,0 +1,11 @@
+{
+  "name": "bookverse",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BookVerse - Fullstack Digital Library Application",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && python app.py"
+  }
+}
