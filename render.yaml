@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: digital-library
+    env: python
+    buildCommand: "./build.sh"
+    startCommand: "cd backend && gunicorn app:app --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DATABASE_URL
+        fromDatabase:
+          name: digital-library-db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+
+databases:
+  - name: digital-library-db
+    databaseName: library
+    user: library_user
