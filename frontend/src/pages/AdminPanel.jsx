@@ -68,27 +68,27 @@ const AdminPanel = () => {
           api.get('/admin/stats'),
           api.get('/categories')
         ]);
-        setStats(statsRes.data);
-        setCategories(catRes.data);
+        setStats(statsRes.data && typeof statsRes.data === 'object' ? statsRes.data : { total_books: 0, total_categories: 0, total_users: 0, total_borrows: 0, total_favorites: 0, activity: [] });
+        setCategories(Array.isArray(catRes.data) ? catRes.data : []);
       } else if (activeTab === 'books') {
         const [booksRes, catRes] = await Promise.all([
           api.get('/books'),
           api.get('/categories')
         ]);
-        setBooks(booksRes.data);
-        setCategories(catRes.data);
+        setBooks(Array.isArray(booksRes.data) ? booksRes.data : []);
+        setCategories(Array.isArray(catRes.data) ? catRes.data : []);
       } else if (activeTab === 'categories') {
         const catRes = await api.get('/categories');
-        setCategories(catRes.data);
+        setCategories(Array.isArray(catRes.data) ? catRes.data : []);
       } else if (activeTab === 'users') {
         const usersRes = await api.get('/admin/users');
-        setUsers(usersRes.data);
+        setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
       } else if (activeTab === 'transactions') {
         const txRes = await api.get('/admin/borrows');
-        setTransactions(txRes.data);
+        setTransactions(Array.isArray(txRes.data) ? txRes.data : []);
       } else if (activeTab === 'import') {
         const catRes = await api.get('/categories');
-        setCategories(catRes.data);
+        setCategories(Array.isArray(catRes.data) ? catRes.data : []);
       }
     } catch (err) {
       console.error('Error fetching admin data:', err);

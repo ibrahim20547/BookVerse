@@ -19,11 +19,13 @@ const Dashboard = () => {
   const fetchBorrows = async () => {
     try {
       const res = await api.get('/user/borrows');
-      setBorrows(res.data);
+      setBorrows(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load user borrows:', err);
+      setBorrows([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleReturn = async (bookId) => {
@@ -31,14 +33,15 @@ const Dashboard = () => {
       await api.post(`/return/${bookId}`);
       fetchBorrows();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to return');
+      alert(err.response?.data?.message || 'Failed to return book');
     }
   };
 
   if (loading) return <div className="text-center mt-2">Loading your library...</div>;
 
-  const activeBorrows = borrows.filter(b => b.status === 'borrowed');
-  const history = borrows.filter(b => b.status === 'returned');
+  const safeBorrows = Array.isArray(borrows) ? borrows : [];
+  const activeBorrows = safeBorrows.filter(b => b && b.status === 'borrowed');
+  const history = safeBorrows.filter(b => b && b.status === 'returned');
 
   return (
     <div className="container" style={{ margin: '2rem auto' }}>
@@ -67,7 +70,7 @@ const Dashboard = () => {
               <div key={record.id} style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '1.2rem', display: 'flex', flexDirection: 'column', background: 'var(--background)' }}>
                 <h4 style={{ marginBottom: '0.5rem', fontSize: '1.1rem', fontFamily: '"Crimson Text", serif', color: 'var(--primary)' }}>{record.book_title}</h4>
                 <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                  Borrowed on: {new Date(record.borrow_date).toLocaleDateString()}
+                  Borrowed on: {record.borrow_date ? new Date(record.borrow_date).toLocaleDateString() : 'N/A'}
                 </p>
                 <div style={{ marginTop: 'auto', display: 'flex', gap: '0.5rem' }}>
                   <Link to={`/book/${record.book_id}`} className="btn btn-outline" style={{ flex: 1, textAlign: 'center', fontSize: '0.85rem', padding: '0.5rem' }}>View Book</Link>
@@ -100,7 +103,7 @@ const Dashboard = () => {
                     <td style={{ padding: '1rem', fontWeight: '500' }}>
                       <Link to={`/book/${record.book_id}`}>{record.book_title}</Link>
                     </td>
-                    <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{new Date(record.borrow_date).toLocaleDateString()}</td>
+                    <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{record.borrow_date ? new Date(record.borrow_date).toLocaleDateString() : 'N/A'}</td>
                     <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{record.return_date ? new Date(record.return_date).toLocaleDateString() : '-'}</td>
                     <td style={{ padding: '1rem' }}>
                       <span style={{ background: '#e6f4ea', color: '#1e4b2e', padding: '0.3rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '600' }}>

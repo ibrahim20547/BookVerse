@@ -19,9 +19,10 @@ const AllBooks = () => {
     const fetchCategories = async () => {
       try {
         const res = await api.get('/categories');
-        setCategories(res.data);
+        setCategories(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
-        console.error(err);
+        console.error('Failed to load categories:', err);
+        setCategories([]);
       }
     };
     fetchCategories();
@@ -42,19 +43,23 @@ const AllBooks = () => {
       if (searchQuery) url += `search=${encodeURIComponent(searchQuery)}&`;
       if (catId) url += `category_id=${catId}&`;
       const res = await api.get(url);
-      setBooks(res.data);
+      const safeBooksList = Array.isArray(res.data) ? res.data : [];
+      setBooks(safeBooksList);
 
       if (searchQuery) {
         const extRes = await api.get(`/external/search?q=${encodeURIComponent(searchQuery)}`);
+        const safeExtList = Array.isArray(extRes.data) ? extRes.data : [];
         // Filter out books that might already be in our DB (basic title match)
-        const localTitles = res.data.map(b => b.title.toLowerCase());
-        const filteredExt = extRes.data.filter(b => !localTitles.includes(b.title.toLowerCase()));
+        const localTitles = safeBooksList.map(b => (b.title || '').toLowerCase());
+        const filteredExt = safeExtList.filter(b => b && b.title && !localTitles.includes(b.title.toLowerCase()));
         setExternalBooks(filteredExt);
       } else {
         setExternalBooks([]);
       }
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load books:', err);
+      setBooks([]);
+      setExternalBooks([]);
     } finally {
       setLoading(false);
     }
@@ -64,6 +69,10 @@ const AllBooks = () => {
     e.preventDefault();
     fetchBooks(search, selectedCategory);
   };
+
+  const safeCategories = Array.isArray(categories) ? categories : [];
+  const safeBooks = Array.isArray(books) ? books : [];
+  const safeExternalBooks = Array.isArray(externalBooks) ? externalBooks : [];
 
   return (
     <div>
@@ -96,7 +105,7 @@ const AllBooks = () => {
                   All Categories
                 </button>
               </li>
-              {categories.map(cat => (
+              {safeCategories.map(cat => (
                 <li key={cat.id} style={{ marginBottom: '0.8rem' }}>
                   <button 
                     onClick={() => setSelectedCategory(cat.id)}
@@ -122,8 +131,8 @@ const AllBooks = () => {
           {!loading && (
             <>
               {/* Local Results */}
-              <div className="grid-3" style={{ marginBottom: externalBooks.length > 0 ? '3rem' : '0' }}>
-                {books.map(book => (
+              <div className="grid-3" style={{ marginBottom: safeExternalBooks.length > 0 ? '3rem' : '0' }}>
+                {safeBooks.map(book => (
                   <div key={book.id} className="card" style={{ display: 'flex', flexDirection: 'column', padding: '1rem' }}>
                     {book.cover_image && (
                       <div style={{ height: '250px', borderRadius: '8px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -132,7 +141,7 @@ const AllBooks = () => {
                     )}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                       <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--accent)', fontWeight: 'bold', letterSpacing: '1px', marginBottom: '0.4rem' }}>
-                        {book.category_name}
+                        {book.category_name || 'General'}
                       </span>
                       <h4 style={{ marginBottom: '0.2rem', fontSize: '1.2rem', color: 'var(--primary)', lineHeight: '1.3', fontFamily: '"Crimson Text", serif' }}>{book.title}</h4>
                       <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '0.5rem', fontWeight: '500', fontStyle: 'italic' }}>{book.author}</p>
@@ -155,12 +164,12 @@ const AllBooks = () => {
               </div>
 
               {/* External Results */}
-              {externalBooks.length > 0 && (
+              {safeExternalBooks.length > 0 && (
                 <>
                   <hr style={{ border: 'none', borderTop: '2px dashed var(--border)', margin: '0 0 2rem 0' }} />
                   <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-main)' }}>🌐 Discover from Web</h3>
                   <div className="grid-3">
-                    {externalBooks.map(book => (
+                    {safeExternalBooks.map(book => (
                       <div key={book.id} className="card" style={{ display: 'flex', flexDirection: 'column', padding: '1rem', border: '1px solid var(--accent)' }}>
                         {book.cover_image ? (
                           <div style={{ height: '250px', borderRadius: '8px', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -192,7 +201,7 @@ const AllBooks = () => {
                 </>
               )}
 
-              {books.length === 0 && externalBooks.length === 0 && (
+              {safeBooks.length === 0 && safeExternalBooks.length === 0 && (
                 <p style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '3rem 0' }}>No matching books found in library or web.</p>
               )}
             </>

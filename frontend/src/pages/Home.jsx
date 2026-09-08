@@ -15,10 +15,14 @@ const Home = () => {
           api.get('/books'),
           api.get('/categories')
         ]);
-        setBooks(booksRes.data);
-        setCategories(catRes.data.slice(0, 4)); // Show top 4 categories
+        const fetchedBooks = Array.isArray(booksRes.data) ? booksRes.data : [];
+        const fetchedCats = Array.isArray(catRes.data) ? catRes.data : [];
+        setBooks(fetchedBooks);
+        setCategories(fetchedCats.slice(0, 4)); // Show top 4 categories
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching home page data:', err);
+        setBooks([]);
+        setCategories([]);
       }
     };
     fetchData();
@@ -33,37 +37,42 @@ const Home = () => {
     }
   };
 
-  const featuredBooks = books.slice(0, 4);
-  const popularBooks = [...books].sort((a, b) => b.rating - a.rating).slice(0, 4);
-  const newArrivals = [...books].reverse().slice(0, 4);
+  const safeBooks = Array.isArray(books) ? books : [];
+  const featuredBooks = safeBooks.slice(0, 4);
+  const popularBooks = [...safeBooks].sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 4);
+  const newArrivals = [...safeBooks].slice(-4).reverse();
 
-  const renderBookGrid = (bookList) => (
-    <div className="grid-4">
-      {bookList.map(book => (
-        <div key={book.id} className="card" style={{ display: 'flex', flexDirection: 'column', padding: '1.2rem', background: '#FFFFFF' }}>
-          {book.cover_image && (
-            <div style={{ height: '280px', marginBottom: '1.2rem', display: 'flex', justifyContent: 'center' }}>
-              <img src={book.cover_image} alt={book.title} className="book-cover" style={{ maxWidth: '100%' }} />
-            </div>
-          )}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', textAlign: 'center' }}>
-            <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--accent)', fontWeight: '700', letterSpacing: '1px', marginBottom: '0.4rem' }}>
-              {book.category_name}
-            </span>
-            <h4 style={{ marginBottom: '0.2rem', fontSize: '1.2rem', color: 'var(--primary)', lineHeight: '1.3', fontFamily: '"Crimson Text", serif' }}>
-              {book.title}
-            </h4>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '500', fontStyle: 'italic', marginBottom: '1rem' }}>
-              {book.author}
-            </p>
-            <div style={{ marginTop: 'auto' }}>
-              <Link to={`/book/${book.id}`} className="btn btn-outline" style={{ width: '100%', padding: '0.5rem' }}>View Details</Link>
+  const renderBookGrid = (bookList) => {
+    const list = Array.isArray(bookList) ? bookList : [];
+    if (list.length === 0) return null;
+    return (
+      <div className="grid-4">
+        {list.map(book => (
+          <div key={book.id} className="card" style={{ display: 'flex', flexDirection: 'column', padding: '1.2rem', background: '#FFFFFF' }}>
+            {book.cover_image && (
+              <div style={{ height: '280px', marginBottom: '1.2rem', display: 'flex', justifyContent: 'center' }}>
+                <img src={book.cover_image} alt={book.title} className="book-cover" style={{ maxWidth: '100%' }} />
+              </div>
+            )}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', textAlign: 'center' }}>
+              <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--accent)', fontWeight: '700', letterSpacing: '1px', marginBottom: '0.4rem' }}>
+                {book.category_name || 'General'}
+              </span>
+              <h4 style={{ marginBottom: '0.2rem', fontSize: '1.2rem', color: 'var(--primary)', lineHeight: '1.3', fontFamily: '"Crimson Text", serif' }}>
+                {book.title}
+              </h4>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '500', fontStyle: 'italic', marginBottom: '1rem' }}>
+                {book.author}
+              </p>
+              <div style={{ marginTop: 'auto' }}>
+                <Link to={`/book/${book.id}`} className="btn btn-outline" style={{ width: '100%', padding: '0.5rem' }}>View Details</Link>
+              </div>
             </div>
           </div>
-        </div>
-      ))}
-    </div>
-  );
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div>

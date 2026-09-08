@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '../api';
 
 const Categories = () => {
@@ -10,13 +10,16 @@ const Categories = () => {
     const fetchCategories = async () => {
       try {
         const res = await api.get('/categories');
-        setCategories(res.data);
+        setCategories(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
-        console.error(err);
+        console.error('Failed to load categories:', err);
+        setCategories([]);
       }
     };
     fetchCategories();
   }, []);
+
+  const safeCategories = Array.isArray(categories) ? categories : [];
 
   return (
     <div>
@@ -28,7 +31,7 @@ const Categories = () => {
       </section>
 
       <div className="grid-3">
-        {categories.map(cat => (
+        {safeCategories.map(cat => (
           <div 
             key={cat.id} 
             className="card" 
