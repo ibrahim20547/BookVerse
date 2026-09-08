@@ -9,29 +9,38 @@ const DEFAULT_THEME = {
   isDarkMode: false
 };
 
-// Helper to darken a hex color (crude approach, sufficient for UI)
+// Helper to darken or lighten a hex color safely
 const shadeColor = (color, percent) => {
-    let R = parseInt(color.substring(1,3),16);
-    let G = parseInt(color.substring(3,5),16);
-    let B = parseInt(color.substring(5,7),16);
+    if (!color || typeof color !== 'string' || !color.startsWith('#') || color.length < 7) {
+        return color || '#0A2A1E';
+    }
+    try {
+        let R = parseInt(color.substring(1,3),16);
+        let G = parseInt(color.substring(3,5),16);
+        let B = parseInt(color.substring(5,7),16);
 
-    R = parseInt(R * (100 + percent) / 100);
-    G = parseInt(G * (100 + percent) / 100);
-    B = parseInt(B * (100 + percent) / 100);
+        if (isNaN(R) || isNaN(G) || isNaN(B)) return color;
 
-    R = (R<255)?R:255;  
-    G = (G<255)?G:255;  
-    B = (B<255)?B:255;  
+        R = parseInt(R * (100 + percent) / 100);
+        G = parseInt(G * (100 + percent) / 100);
+        B = parseInt(B * (100 + percent) / 100);
 
-    R = (R>0)?R:0;
-    G = (G>0)?G:0;
-    B = (B>0)?B:0;
+        R = (R < 255) ? R : 255;  
+        G = (G < 255) ? G : 255;  
+        B = (B < 255) ? B : 255;  
 
-    let RR = ((R.toString(16).length===1)?"0"+R.toString(16):R.toString(16));
-    let GG = ((G.toString(16).length===1)?"0"+G.toString(16):G.toString(16));
-    let BB = ((B.toString(16).length===1)?"0"+B.toString(16):B.toString(16));
+        R = (R > 0) ? R : 0;
+        G = (G > 0) ? G : 0;
+        B = (B > 0) ? B : 0;
 
-    return "#"+RR+GG+BB;
+        let RR = ((R.toString(16).length === 1) ? "0" + R.toString(16) : R.toString(16));
+        let GG = ((G.toString(16).length === 1) ? "0" + G.toString(16) : G.toString(16));
+        let BB = ((B.toString(16).length === 1) ? "0" + B.toString(16) : B.toString(16));
+
+        return "#" + RR + GG + BB;
+    } catch {
+        return color;
+    }
 };
 
 export const ThemeProvider = ({ children }) => {
@@ -41,39 +50,49 @@ export const ThemeProvider = ({ children }) => {
 
   // Load from local storage on mount
   useEffect(() => {
-    const savedPrimary = localStorage.getItem('theme-primary');
-    const savedMode = localStorage.getItem('theme-mode');
-    
-    if (savedPrimary) setPrimaryColor(savedPrimary);
-    if (savedMode) setIsDarkMode(savedMode === 'dark');
+    try {
+      const savedPrimary = localStorage.getItem('theme-primary');
+      const savedMode = localStorage.getItem('theme-mode');
+      
+      if (savedPrimary && savedPrimary.startsWith('#') && savedPrimary.length === 7) {
+        setPrimaryColor(savedPrimary);
+      }
+      if (savedMode) setIsDarkMode(savedMode === 'dark');
+    } catch (e) {
+      console.warn('LocalStorage theme load error:', e);
+    }
   }, []);
 
   // Apply theme when state changes
   useEffect(() => {
-    const root = document.documentElement;
-    
-    // Save to local storage
-    localStorage.setItem('theme-primary', primaryColor);
-    localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
+    try {
+      const root = document.documentElement;
+      
+      // Save to local storage
+      localStorage.setItem('theme-primary', primaryColor);
+      localStorage.setItem('theme-mode', isDarkMode ? 'dark' : 'light');
 
-    // Set Primary Colors
-    root.style.setProperty('--primary', primaryColor);
-    root.style.setProperty('--primary-light', shadeColor(primaryColor, 20)); // lighter
-    root.style.setProperty('--primary-dark', shadeColor(primaryColor, -40)); // darker
+      // Set Primary Colors
+      root.style.setProperty('--primary', primaryColor);
+      root.style.setProperty('--primary-light', shadeColor(primaryColor, 20)); // lighter
+      root.style.setProperty('--primary-dark', shadeColor(primaryColor, -40)); // darker
 
-    // Set Background & Text Colors based on mode
-    if (isDarkMode) {
-      root.style.setProperty('--background', '#121212');
-      root.style.setProperty('--surface', '#1E1E1E');
-      root.style.setProperty('--text-main', '#E0E0E0');
-      root.style.setProperty('--text-muted', '#999999');
-      root.style.setProperty('--border', '#333333');
-    } else {
-      root.style.setProperty('--background', '#F9F9F6');
-      root.style.setProperty('--surface', '#FFFFFF');
-      root.style.setProperty('--text-main', '#333333');
-      root.style.setProperty('--text-muted', '#666666');
-      root.style.setProperty('--border', '#E5E7EB');
+      // Set Background & Text Colors based on mode
+      if (isDarkMode) {
+        root.style.setProperty('--background', '#121212');
+        root.style.setProperty('--surface', '#1E1E1E');
+        root.style.setProperty('--text-main', '#E0E0E0');
+        root.style.setProperty('--text-muted', '#999999');
+        root.style.setProperty('--border', '#333333');
+      } else {
+        root.style.setProperty('--background', '#F9F9F6');
+        root.style.setProperty('--surface', '#FFFFFF');
+        root.style.setProperty('--text-main', '#333333');
+        root.style.setProperty('--text-muted', '#666666');
+        root.style.setProperty('--border', '#E5E7EB');
+      }
+    } catch (e) {
+      console.warn('Theme apply error:', e);
     }
   }, [primaryColor, isDarkMode]);
 
